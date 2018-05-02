@@ -1,7 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Reflection;
+using System.IO;
+using System.Threading;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -18,12 +19,23 @@ namespace RoslynTestFramework
 
         [NotNull]
         [ItemNotNull]
-        private static readonly ImmutableHashSet<MetadataReference> DefaultReferences =
-            ImmutableHashSet.Create(new MetadataReference[]
+        private static readonly Lazy<ImmutableHashSet<MetadataReference>> DefaultReferencesLazy =
+            new Lazy<ImmutableHashSet<MetadataReference>>(ResolveDefaultReferences, LazyThreadSafetyMode.PublicationOnly);
+
+        [NotNull]
+        [ItemNotNull]
+        private static ImmutableHashSet<MetadataReference> ResolveDefaultReferences()
+        {
+            string assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+
+            return ImmutableHashSet.Create(new MetadataReference[]
             {
-                MetadataReference.CreateFromFile(typeof(object).GetTypeInfo().Assembly.Location),
-                MetadataReference.CreateFromFile(typeof(Enumerable).GetTypeInfo().Assembly.Location)
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Core.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll"))
             });
+        }
 
         [NotNull]
         public string SourceCode { get; }
@@ -77,13 +89,23 @@ namespace RoslynTestFramework
 
         public AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] AnalyzerOptions options)
-            : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferences,
+            : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferencesLazy.Value,
                 DefaultDocumentationMode, null, DefaultTestValidationMode, DiagnosticsCaptureMode.RequireInSourceTree, options)
         {
             FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
             FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
             FrameworkGuard.NotNullNorWhiteSpace(languageName, nameof(languageName));
             FrameworkGuard.NotNull(options, nameof(options));
+        }
+
+        [NotNull]
+        public AnalyzerTestContext WithCode([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans)
+        {
+            FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
+            FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
+
+            return new AnalyzerTestContext(sourceCode, sourceSpans, LanguageName, FileName, AssemblyName, References,
+                DocumentationMode, CompilerWarningLevel, ValidationMode, DiagnosticsCaptureMode, Options);
         }
 
         [NotNull]
@@ -140,6 +162,15 @@ namespace RoslynTestFramework
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
                 DocumentationMode, CompilerWarningLevel, ValidationMode, DiagnosticsCaptureMode.AllowOutsideSourceTree, Options);
+        }
+
+        [NotNull]
+        public AnalyzerTestContext WithOptions([NotNull] AnalyzerOptions options)
+        {
+            FrameworkGuard.NotNull(options, nameof(options));
+
+            return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
+                DocumentationMode, CompilerWarningLevel, ValidationMode, DiagnosticsCaptureMode, options);
         }
     }
 }
