@@ -5,7 +5,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.VisualBasic;
 
-namespace CodeContractNullability.Test.RoslynTestFramework
+namespace RoslynTestFramework
 {
     /// <summary />
     internal sealed class DocumentFactory

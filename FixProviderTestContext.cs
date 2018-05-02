@@ -3,7 +3,7 @@ using System.Collections.Immutable;
 using CodeContractNullability.Utilities;
 using JetBrains.Annotations;
 
-namespace CodeContractNullability.Test.RoslynTestFramework
+namespace RoslynTestFramework
 {
     public sealed class FixProviderTestContext
     {

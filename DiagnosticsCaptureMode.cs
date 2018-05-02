@@ -1,4 +1,4 @@
-﻿namespace CodeContractNullability.Test.RoslynTestFramework
+﻿namespace RoslynTestFramework
 {
     public enum DiagnosticsCaptureMode
     {

@@ -6,7 +6,7 @@ using CodeContractNullability.Utilities;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.Text;
 
-namespace CodeContractNullability.Test.RoslynTestFramework
+namespace RoslynTestFramework
 {
     public sealed class FixableDocument
     {

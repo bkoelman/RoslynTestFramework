@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis.CodeFixes;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
-namespace CodeContractNullability.Test.RoslynTestFramework
+namespace RoslynTestFramework
 {
     public abstract class AnalysisTestFixture
     {

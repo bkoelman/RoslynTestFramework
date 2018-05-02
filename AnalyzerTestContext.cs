@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
-namespace CodeContractNullability.Test.RoslynTestFramework
+namespace RoslynTestFramework
 {
     public sealed class AnalyzerTestContext
     {
