@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
-using CodeContractNullability.Utilities;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
@@ -26,12 +25,15 @@ namespace RoslynTestFramework
         protected abstract DiagnosticAnalyzer CreateAnalyzer();
 
         [NotNull]
-        protected abstract CodeFixProvider CreateFixProvider();
+        protected virtual CodeFixProvider CreateFixProvider()
+        {
+            throw new NotImplementedException();
+        }
 
         protected void AssertDiagnostics([NotNull] AnalyzerTestContext context, [NotNull] [ItemNotNull] params string[] messages)
         {
-            Guard.NotNull(context, nameof(context));
-            Guard.NotNull(messages, nameof(messages));
+            FrameworkGuard.NotNull(context, nameof(context));
+            FrameworkGuard.NotNull(messages, nameof(messages));
 
             RunDiagnostics(context, messages);
         }
@@ -163,8 +165,8 @@ namespace RoslynTestFramework
         protected void AssertDiagnosticsWithCodeFixes([NotNull] FixProviderTestContext context,
             [NotNull] [ItemNotNull] params string[] messages)
         {
-            Guard.NotNull(context, nameof(context));
-            Guard.NotNull(messages, nameof(messages));
+            FrameworkGuard.NotNull(context, nameof(context));
+            FrameworkGuard.NotNull(messages, nameof(messages));
 
             AnalysisResult analysisResult = RunDiagnostics(context.AnalyzerTestContext, messages);
 
@@ -215,18 +217,14 @@ namespace RoslynTestFramework
         private static void VerifyCodeAction([NotNull] CodeAction codeAction, [NotNull] Document document,
             [NotNull] string expectedCode, bool formatOutputDocument)
         {
-            Guard.NotNull(codeAction, nameof(codeAction));
+            FrameworkGuard.NotNull(codeAction, nameof(codeAction));
+            FrameworkGuard.NotNull(expectedCode, nameof(expectedCode));
 
-            if (codeAction.GetType().Name != "SolutionChangeAction")
-            {
-                Guard.NotNull(expectedCode, nameof(expectedCode));
+            ImmutableArray<CodeActionOperation> operations = codeAction.GetOperationsAsync(CancellationToken.None).Result;
 
-                ImmutableArray<CodeActionOperation> operations = codeAction.GetOperationsAsync(CancellationToken.None).Result;
+            operations.Should().HaveCount(1);
 
-                operations.Should().HaveCount(1);
-
-                VerifyOperationText(document, operations.Single(), expectedCode, formatOutputDocument);
-            }
+            VerifyOperationText(document, operations.Single(), expectedCode, formatOutputDocument);
         }
 
         private static void VerifyOperationText([NotNull] Document sourceDocument, [NotNull] CodeActionOperation operation,
@@ -260,9 +258,9 @@ namespace RoslynTestFramework
             public AnalysisResult([NotNull] [ItemNotNull] IList<Diagnostic> diagnostics, [NotNull] IList<TextSpan> spans,
                 [NotNull] [ItemNotNull] IList<string> messages)
             {
-                Guard.NotNull(diagnostics, nameof(diagnostics));
-                Guard.NotNull(spans, nameof(spans));
-                Guard.NotNull(messages, nameof(messages));
+                FrameworkGuard.NotNull(diagnostics, nameof(diagnostics));
+                FrameworkGuard.NotNull(spans, nameof(spans));
+                FrameworkGuard.NotNull(messages, nameof(messages));
 
                 Diagnostics = diagnostics;
                 Spans = spans;

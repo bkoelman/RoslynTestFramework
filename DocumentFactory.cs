@@ -1,5 +1,4 @@
-﻿using CodeContractNullability.Utilities;
-using JetBrains.Annotations;
+﻿using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
@@ -27,8 +26,8 @@ namespace RoslynTestFramework
         [NotNull]
         public string FormatSourceCode([NotNull] string sourceCode, [NotNull] AnalyzerTestContext context)
         {
-            Guard.NotNull(context, nameof(context));
-            Guard.NotNull(sourceCode, nameof(sourceCode));
+            FrameworkGuard.NotNull(context, nameof(context));
+            FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
 
             Document document = ToDocument(sourceCode, context);
             return FormatDocument(document);
@@ -75,7 +74,7 @@ namespace RoslynTestFramework
         [NotNull]
         public string FormatDocument([NotNull] Document document)
         {
-            Guard.NotNull(document, nameof(document));
+            FrameworkGuard.NotNull(document, nameof(document));
 
             SyntaxNode syntaxRoot = document.GetSyntaxRootAsync().Result;
 

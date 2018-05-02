@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
-using CodeContractNullability.Utilities;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.Text;
 
@@ -38,7 +37,7 @@ namespace RoslynTestFramework
 
         public FixableDocument([NotNull] string text)
         {
-            Guard.NotNull(text, nameof(text));
+            FrameworkGuard.NotNull(text, nameof(text));
 
             var parser = new MarkupParser(text);
             parser.Parse();
@@ -73,7 +72,7 @@ namespace RoslynTestFramework
 
             public MarkupParser([NotNull] string markupCode)
             {
-                Guard.NotNull(markupCode, nameof(markupCode));
+                FrameworkGuard.NotNull(markupCode, nameof(markupCode));
                 this.markupCode = markupCode;
             }
 
@@ -239,7 +238,7 @@ namespace RoslynTestFramework
 
                 public ParseStateMachine([NotNull] MarkupParser parser)
                 {
-                    Guard.NotNull(parser, nameof(parser));
+                    FrameworkGuard.NotNull(parser, nameof(parser));
 
                     this.parser = parser;
                     offset = -1;
@@ -316,8 +315,8 @@ namespace RoslynTestFramework
 
             protected TextBlock([NotNull] string textBefore, [NotNull] string textAfter)
             {
-                Guard.NotNull(textBefore, nameof(textBefore));
-                Guard.NotNull(textAfter, nameof(textAfter));
+                FrameworkGuard.NotNull(textBefore, nameof(textBefore));
+                FrameworkGuard.NotNull(textAfter, nameof(textAfter));
 
                 TextBefore = textBefore;
                 TextAfter = textAfter;

@@ -2,7 +2,6 @@
 using System.Collections.Immutable;
 using System.Linq;
 using System.Reflection;
-using CodeContractNullability.Utilities;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
@@ -81,16 +80,16 @@ namespace RoslynTestFramework
             : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferences,
                 DefaultDocumentationMode, null, DefaultTestValidationMode, DiagnosticsCaptureMode.RequireInSourceTree, options)
         {
-            Guard.NotNull(sourceCode, nameof(sourceCode));
-            Guard.NotNull(sourceSpans, nameof(sourceSpans));
-            Guard.NotNullNorWhiteSpace(languageName, nameof(languageName));
-            Guard.NotNull(options, nameof(options));
+            FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
+            FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
+            FrameworkGuard.NotNullNorWhiteSpace(languageName, nameof(languageName));
+            FrameworkGuard.NotNull(options, nameof(options));
         }
 
         [NotNull]
         public AnalyzerTestContext InFileNamed([NotNull] string fileName)
         {
-            Guard.NotNullNorWhiteSpace(fileName, nameof(fileName));
+            FrameworkGuard.NotNullNorWhiteSpace(fileName, nameof(fileName));
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, fileName, AssemblyName, References,
                 DocumentationMode, CompilerWarningLevel, ValidationMode, DiagnosticsCaptureMode, Options);
@@ -106,7 +105,7 @@ namespace RoslynTestFramework
         [NotNull]
         public AnalyzerTestContext WithReferences([NotNull] [ItemNotNull] IEnumerable<MetadataReference> references)
         {
-            Guard.NotNull(references, nameof(references));
+            FrameworkGuard.NotNull(references, nameof(references));
 
             ImmutableList<MetadataReference> referenceList = ImmutableList.CreateRange(references);
 

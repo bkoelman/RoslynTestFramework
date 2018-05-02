@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Collections.Immutable;
-using CodeContractNullability.Utilities;
 using JetBrains.Annotations;
 
 namespace RoslynTestFramework
@@ -19,8 +18,8 @@ namespace RoslynTestFramework
         public FixProviderTestContext([NotNull] AnalyzerTestContext analyzerTestContext,
             [NotNull] [ItemNotNull] IEnumerable<string> expectedCode, bool ignoreWhitespaceDifferences)
         {
-            Guard.NotNull(analyzerTestContext, nameof(analyzerTestContext));
-            Guard.NotNull(expectedCode, nameof(expectedCode));
+            FrameworkGuard.NotNull(analyzerTestContext, nameof(analyzerTestContext));
+            FrameworkGuard.NotNull(expectedCode, nameof(expectedCode));
 
             AnalyzerTestContext = analyzerTestContext;
             ExpectedCode = ImmutableList.CreateRange(expectedCode);
@@ -30,7 +29,7 @@ namespace RoslynTestFramework
         [NotNull]
         public FixProviderTestContext WithExpectedCode([NotNull] [ItemNotNull] IEnumerable<string> expectedCode)
         {
-            Guard.NotNull(expectedCode, nameof(expectedCode));
+            FrameworkGuard.NotNull(expectedCode, nameof(expectedCode));
 
             return new FixProviderTestContext(AnalyzerTestContext, expectedCode, IgnoreWhitespaceDifferences);
         }
