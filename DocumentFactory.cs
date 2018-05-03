@@ -3,6 +3,8 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.Formatting;
 using Microsoft.CodeAnalysis.VisualBasic;
+using CSharpLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
+using VisualBasicLanguageVersion = Microsoft.CodeAnalysis.VisualBasic.LanguageVersion;
 
 namespace RoslynTestFramework
 {
@@ -18,10 +20,10 @@ namespace RoslynTestFramework
             new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
 
         [NotNull]
-        private static readonly CSharpParseOptions DefaultCSharpParseOptions = new CSharpParseOptions();
+        private static readonly CSharpParseOptions DefaultCSharpParseOptions = new CSharpParseOptions(CSharpLanguageVersion.Latest);
 
         [NotNull]
-        private static readonly VisualBasicParseOptions DefaultBasicParseOptions = new VisualBasicParseOptions();
+        private static readonly VisualBasicParseOptions DefaultBasicParseOptions = new VisualBasicParseOptions(VisualBasicLanguageVersion.Latest);
 
         [NotNull]
         public string FormatSourceCode([NotNull] string sourceCode, [NotNull] AnalyzerTestContext context)
