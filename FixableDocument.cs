@@ -95,7 +95,7 @@ namespace RoslynTestFramework
             private void CalculateSpans()
             {
                 int offset = 0;
-                foreach (var block in TextBlocks)
+                foreach (TextBlock block in TextBlocks)
                 {
                     int blockLength = block.TextBefore.Length;
 
@@ -181,7 +181,7 @@ namespace RoslynTestFramework
                     }
                     case '*':
                     {
-                        var parts = spanInnerText.Split(ReplaceSeparatorArray, StringSplitOptions.None);
+                        string[] parts = spanInnerText.Split(ReplaceSeparatorArray, StringSplitOptions.None);
 
                         if (parts.Length == 1)
                         {
@@ -212,7 +212,7 @@ namespace RoslynTestFramework
 
             private void AssertSpanIsClosed(int offset)
             {
-                foreach (var spanKind in SpanKinds)
+                foreach (char spanKind in SpanKinds)
                 {
                     string spanEndText = spanKind + SpanCloseText;
 

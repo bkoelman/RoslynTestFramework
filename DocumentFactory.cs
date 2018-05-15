@@ -20,10 +20,12 @@ namespace RoslynTestFramework
             new VisualBasicCompilationOptions(OutputKind.DynamicallyLinkedLibrary);
 
         [NotNull]
-        private static readonly CSharpParseOptions DefaultCSharpParseOptions = new CSharpParseOptions(CSharpLanguageVersion.Latest);
+        private static readonly CSharpParseOptions DefaultCSharpParseOptions =
+            new CSharpParseOptions(CSharpLanguageVersion.Latest);
 
         [NotNull]
-        private static readonly VisualBasicParseOptions DefaultBasicParseOptions = new VisualBasicParseOptions(VisualBasicLanguageVersion.Latest);
+        private static readonly VisualBasicParseOptions DefaultBasicParseOptions =
+            new VisualBasicParseOptions(VisualBasicLanguageVersion.Latest);
 
         [NotNull]
         public string FormatSourceCode([NotNull] string sourceCode, [NotNull] AnalyzerTestContext context)
