@@ -6,6 +6,7 @@ using Microsoft.CodeAnalysis.VisualBasic;
 using CSharpLanguageVersion = Microsoft.CodeAnalysis.CSharp.LanguageVersion;
 using VisualBasicLanguageVersion = Microsoft.CodeAnalysis.VisualBasic.LanguageVersion;
 
+// ReSharper disable once CheckNamespace
 namespace RoslynTestFramework
 {
     /// <summary />

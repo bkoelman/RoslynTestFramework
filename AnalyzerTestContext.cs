@@ -8,6 +8,7 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Diagnostics;
 using Microsoft.CodeAnalysis.Text;
 
+// ReSharper disable once CheckNamespace
 namespace RoslynTestFramework
 {
     public sealed class AnalyzerTestContext

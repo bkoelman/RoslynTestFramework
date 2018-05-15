@@ -5,6 +5,7 @@ using System.Linq;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis.Text;
 
+// ReSharper disable once CheckNamespace
 namespace RoslynTestFramework
 {
     public sealed class FixableDocument

@@ -2,6 +2,7 @@
 using System.Collections.Immutable;
 using JetBrains.Annotations;
 
+// ReSharper disable once CheckNamespace
 namespace RoslynTestFramework
 {
     public sealed class FixProviderTestContext

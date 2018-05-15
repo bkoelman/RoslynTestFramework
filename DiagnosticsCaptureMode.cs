@@ -1,4 +1,5 @@
-﻿namespace RoslynTestFramework
+﻿// ReSharper disable once CheckNamespace
+namespace RoslynTestFramework
 {
     public enum DiagnosticsCaptureMode
     {
