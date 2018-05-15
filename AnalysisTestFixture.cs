@@ -207,12 +207,16 @@ namespace RoslynTestFramework
             [NotNull] CodeFixProvider fixProvider)
         {
             ImmutableArray<CodeAction>.Builder builder = ImmutableArray.CreateBuilder<CodeAction>();
-            Action<CodeAction, ImmutableArray<Diagnostic>> registerCodeFix = (codeAction, _) => builder.Add(codeAction);
 
-            var fixContext = new CodeFixContext(document, diagnostic, registerCodeFix, CancellationToken.None);
+            var fixContext = new CodeFixContext(document, diagnostic, RegisterCodeFix, CancellationToken.None);
             fixProvider.RegisterCodeFixesAsync(fixContext).Wait();
 
             return builder.ToImmutable();
+
+            void RegisterCodeFix(CodeAction codeAction, ImmutableArray<Diagnostic> _)
+            {
+                builder.Add(codeAction);
+            }
         }
 
         private static void VerifyCodeAction([NotNull] CodeAction codeAction, [NotNull] Document document,
