@@ -91,8 +91,10 @@ namespace RoslynTestFramework
         private CompilationWithAnalyzers GetCompilationWithAnalyzers([NotNull] Document document,
             TestValidationMode validationMode, [NotNull] AnalyzerOptions options)
         {
-            ImmutableArray<DiagnosticAnalyzer> analyzers = ImmutableArray.Create(CreateAnalyzer());
+            DiagnosticAnalyzer analyzer = CreateAnalyzer();
+
             Compilation compilation = document.Project.GetCompilationAsync().Result;
+            compilation = EnsureAnalyzerIsEnabled(analyzer, compilation);
 
             ImmutableArray<Diagnostic> compilerDiagnostics = compilation.GetDiagnostics(CancellationToken.None);
             if (validationMode != TestValidationMode.AllowCompileErrors)
@@ -100,7 +102,24 @@ namespace RoslynTestFramework
                 ValidateCompileErrors(compilerDiagnostics);
             }
 
-            return compilation.WithAnalyzers(analyzers, options);
+            return compilation.WithAnalyzers(ImmutableArray.Create(analyzer), options);
+        }
+
+        [NotNull]
+        private static Compilation EnsureAnalyzerIsEnabled([NotNull] DiagnosticAnalyzer analyzer,
+            [NotNull] Compilation compilation)
+        {
+            ImmutableDictionary<string, ReportDiagnostic> diagnosticOptions = compilation.Options.SpecificDiagnosticOptions;
+
+            foreach (DiagnosticDescriptor descriptor in analyzer.SupportedDiagnostics)
+            {
+                if (!descriptor.IsEnabledByDefault)
+                {
+                    diagnosticOptions = diagnosticOptions.Add(descriptor.Id, ReportDiagnostic.Warn);
+                }
+            }
+
+            return compilation.WithOptions(compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
         }
 
         private void ValidateCompileErrors([ItemNotNull] ImmutableArray<Diagnostic> compilerDiagnostics)
