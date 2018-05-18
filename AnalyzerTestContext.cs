@@ -16,6 +16,7 @@ namespace RoslynTestFramework
         private const string DefaultFileName = "TestDocument";
         private const string DefaultAssemblyName = "TestProject";
         private const DocumentationMode DefaultDocumentationMode = DocumentationMode.None;
+        private const OutputKind DefaultOutputKind = OutputKind.DynamicallyLinkedLibrary;
         private const TestValidationMode DefaultTestValidationMode = TestValidationMode.AllowCompileWarnings;
 
         [NotNull]
@@ -28,6 +29,11 @@ namespace RoslynTestFramework
         private static ImmutableHashSet<MetadataReference> ResolveDefaultReferences()
         {
             string assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+
+            if (assemblyPath == null)
+            {
+                throw new InvalidOperationException("Failed to locate assembly for System.Object.");
+            }
 
             return ImmutableHashSet.Create(new MetadataReference[]
             {
@@ -59,6 +65,8 @@ namespace RoslynTestFramework
 
         public DocumentationMode DocumentationMode { get; }
 
+        public OutputKind OutputKind { get; }
+
         [CanBeNull]
         public int? CompilerWarningLevel { get; }
 
@@ -74,7 +82,7 @@ namespace RoslynTestFramework
         private AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] string fileName, [NotNull] string assemblyName,
             [NotNull] [ItemNotNull] ImmutableHashSet<MetadataReference> references, DocumentationMode documentationMode,
-            [CanBeNull] int? compilerWarningLevel, bool warningAsError, TestValidationMode validationMode,
+            OutputKind outputKind, [CanBeNull] int? compilerWarningLevel, bool warningAsError, TestValidationMode validationMode,
             DiagnosticsCaptureMode diagnosticsCaptureMode, [NotNull] AnalyzerOptions options)
         {
             SourceCode = sourceCode;
@@ -84,6 +92,7 @@ namespace RoslynTestFramework
             AssemblyName = assemblyName;
             References = references;
             DocumentationMode = documentationMode;
+            OutputKind = outputKind;
             CompilerWarningLevel = compilerWarningLevel;
             WarningAsError = warningAsError;
             ValidationMode = validationMode;
@@ -94,8 +103,8 @@ namespace RoslynTestFramework
         public AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] AnalyzerOptions options)
             : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferencesLazy.Value,
-                DefaultDocumentationMode, null, false, DefaultTestValidationMode, DiagnosticsCaptureMode.RequireInSourceTree,
-                options)
+                DefaultDocumentationMode, DefaultOutputKind, null, false, DefaultTestValidationMode,
+                DiagnosticsCaptureMode.RequireInSourceTree, options)
         {
             FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
             FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
@@ -110,7 +119,8 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
 
             return new AnalyzerTestContext(sourceCode, sourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode,
+                Options);
         }
 
         [NotNull]
@@ -119,14 +129,16 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNullNorWhiteSpace(fileName, nameof(fileName));
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, fileName, AssemblyName, References,
-                DocumentationMode, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode,
+                Options);
         }
 
         [NotNull]
         public AnalyzerTestContext InAssemblyNamed([NotNull] string assemblyName)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, assemblyName, References,
-                DocumentationMode, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode,
+                Options);
         }
 
         [NotNull]
@@ -137,43 +149,53 @@ namespace RoslynTestFramework
             ImmutableList<MetadataReference> referenceList = ImmutableList.CreateRange(references);
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName,
-                referenceList.ToImmutableHashSet(), DocumentationMode, CompilerWarningLevel, WarningAsError, ValidationMode,
-                DiagnosticsCaptureMode, Options);
+                referenceList.ToImmutableHashSet(), DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError,
+                ValidationMode, DiagnosticsCaptureMode, Options);
         }
 
         [NotNull]
         public AnalyzerTestContext WithDocumentationMode(DocumentationMode mode)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References, mode,
-                CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+                OutputKind, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+        }
+
+        [NotNull]
+        public AnalyzerTestContext WithOutputKind(OutputKind outputKind)
+        {
+            return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
+                DocumentationMode, outputKind, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode,
+                Options);
         }
 
         [NotNull]
         public AnalyzerTestContext CompileAtWarningLevel(int warningLevel)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, warningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+                DocumentationMode, OutputKind, warningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
         }
 
         [NotNull]
         public AnalyzerTestContext CompileWithWarningAsError(bool warningAsError)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, CompilerWarningLevel, warningAsError, ValidationMode, DiagnosticsCaptureMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, warningAsError, ValidationMode, DiagnosticsCaptureMode,
+                Options);
         }
 
         [NotNull]
         public AnalyzerTestContext InValidationMode(TestValidationMode validationMode)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, CompilerWarningLevel, WarningAsError, validationMode, DiagnosticsCaptureMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError, validationMode, DiagnosticsCaptureMode,
+                Options);
         }
 
         [NotNull]
         public AnalyzerTestContext AllowingDiagnosticsOutsideSourceTree()
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, CompilerWarningLevel, WarningAsError, ValidationMode,
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError, ValidationMode,
                 DiagnosticsCaptureMode.AllowOutsideSourceTree, Options);
         }
 
@@ -183,7 +205,8 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNull(options, nameof(options));
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode, options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningAsError, ValidationMode, DiagnosticsCaptureMode,
+                options);
         }
     }
 }

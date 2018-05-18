@@ -42,8 +42,8 @@ namespace RoslynTestFramework
         public static Document ToDocument([NotNull] string code, [NotNull] AnalyzerTestContext context)
         {
             ParseOptions parseOptions = GetParseOptions(context.DocumentationMode, context.LanguageName);
-            CompilationOptions compilationOptions =
-                GetCompilationOptions(context.LanguageName, context.CompilerWarningLevel, context.WarningAsError);
+            CompilationOptions compilationOptions = GetCompilationOptions(context.LanguageName, context.OutputKind,
+                context.CompilerWarningLevel, context.WarningAsError);
 
             Document document = new AdhocWorkspace()
                 .AddProject(context.AssemblyName, context.LanguageName)
@@ -64,38 +64,41 @@ namespace RoslynTestFramework
         }
 
         [NotNull]
-        private static CompilationOptions GetCompilationOptions([NotNull] string languageName,
+        private static CompilationOptions GetCompilationOptions([NotNull] string languageName, OutputKind outputKind,
             [CanBeNull] int? compilerWarningLevel, bool warningAsError)
         {
-            return languageName == LanguageNames.VisualBasic
-                ? GetBasicCompilationOptions(warningAsError)
-                : GetCSharpCompilationOptions(compilerWarningLevel, warningAsError);
-        }
+            CompilationOptions options = languageName == LanguageNames.VisualBasic
+                ? GetBasicCompilationOptions()
+                : GetCSharpCompilationOptions(compilerWarningLevel);
 
-        [NotNull]
-        private static CompilationOptions GetBasicCompilationOptions(bool warningAsError)
-        {
-            return warningAsError
-                ? DefaultBasicCompilationOptions.WithGeneralDiagnosticOption(ReportDiagnostic.Error)
-                : DefaultBasicCompilationOptions;
-        }
-
-        [NotNull]
-        private static CompilationOptions GetCSharpCompilationOptions([CanBeNull] int? compilerWarningLevel, bool warningAsError)
-        {
-            CSharpCompilationOptions csharpOptions = DefaultCSharpCompilationOptions;
-
-            if (compilerWarningLevel != null)
-            {
-                csharpOptions = csharpOptions.WithWarningLevel(compilerWarningLevel.Value);
-            }
+            options = options.WithOutputKind(outputKind);
 
             if (warningAsError)
             {
-                csharpOptions = csharpOptions.WithGeneralDiagnosticOption(ReportDiagnostic.Error);
+                options = options.WithGeneralDiagnosticOption(ReportDiagnostic.Error);
             }
 
-            return csharpOptions;
+            return options;
+        }
+
+        [NotNull]
+        private static CompilationOptions GetBasicCompilationOptions()
+        {
+            return DefaultBasicCompilationOptions;
+        }
+
+        [NotNull]
+        private static CompilationOptions GetCSharpCompilationOptions([CanBeNull] int? compilerWarningLevel)
+        {
+            CSharpCompilationOptions options = DefaultCSharpCompilationOptions;
+
+            if (compilerWarningLevel != null)
+            {
+                options = options.WithWarningLevel(compilerWarningLevel.Value);
+            }
+
+
+            return options;
         }
 
         [NotNull]
