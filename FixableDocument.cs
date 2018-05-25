@@ -55,11 +55,20 @@ namespace RoslynTestFramework
             private const int SpanTextLength = 2;
 
             [NotNull]
-            private static readonly char[] SpanKinds = { '|', '+', '-', '*' };
+            private static readonly char[] SpanKinds =
+            {
+                '|',
+                '+',
+                '-',
+                '*'
+            };
 
             [NotNull]
             [ItemNotNull]
-            private static readonly string[] ReplaceSeparatorArray = { ReplaceSeparator };
+            private static readonly string[] ReplaceSeparatorArray =
+            {
+                ReplaceSeparator
+            };
 
             [NotNull]
             private readonly string markupCode;
