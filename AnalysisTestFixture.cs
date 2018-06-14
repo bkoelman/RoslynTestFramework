@@ -45,8 +45,8 @@ namespace RoslynTestFramework
         {
             AnalysisResult result = GetAnalysisResult(context, messages);
 
-            VerifyDiagnosticCount(result, context.DiagnosticsCaptureMode);
-            VerifyDiagnostics(result, context);
+            VerifyDiagnosticCount(result);
+            VerifyDiagnostics(result);
 
             return result;
         }
@@ -64,15 +64,8 @@ namespace RoslynTestFramework
         [ItemNotNull]
         private IList<Diagnostic> GetSortedAnalyzerDiagnostics([NotNull] Document document, [NotNull] AnalyzerTestContext context)
         {
-            IEnumerable<Diagnostic> diagnostics =
-                EnumerateDiagnosticsForDocument(document, context).Where(d => d.Id == DiagnosticId);
-
-            if (context.DiagnosticsCaptureMode == DiagnosticsCaptureMode.RequireInSourceTree)
-            {
-                diagnostics = diagnostics.OrderBy(d => d.Location.SourceSpan);
-            }
-
-            return diagnostics.ToImmutableArray();
+            return EnumerateDiagnosticsForDocument(document, context).Where(d => d.Id == DiagnosticId)
+                .OrderBy(d => d.Location.SourceSpan).ToImmutableArray();
         }
 
         [NotNull]
@@ -85,7 +78,7 @@ namespace RoslynTestFramework
 
             SyntaxTree tree = document.GetSyntaxTreeAsync().Result;
 
-            return EnumerateAnalyzerDiagnostics(compilationWithAnalyzers, tree, context.DiagnosticsCaptureMode);
+            return EnumerateAnalyzerDiagnostics(compilationWithAnalyzers, tree);
         }
 
         [NotNull]
@@ -132,55 +125,54 @@ namespace RoslynTestFramework
         [NotNull]
         [ItemNotNull]
         private static IEnumerable<Diagnostic> EnumerateAnalyzerDiagnostics(
-            [NotNull] CompilationWithAnalyzers compilationWithAnalyzers, [NotNull] SyntaxTree tree,
-            DiagnosticsCaptureMode diagnosticsCaptureMode)
+            [NotNull] CompilationWithAnalyzers compilationWithAnalyzers, [NotNull] SyntaxTree tree)
         {
-            foreach (Diagnostic analyzerDiagnostic in compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result)
+            foreach (Diagnostic diagnostic in compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result)
             {
-                Location location = analyzerDiagnostic.Location;
-
-                if (diagnosticsCaptureMode == DiagnosticsCaptureMode.AllowOutsideSourceTree ||
-                    LocationIsInSourceTree(location, tree))
+                if (diagnostic.Location.IsInSource)
                 {
-                    yield return analyzerDiagnostic;
-                }
-            }
-        }
-
-        private static bool LocationIsInSourceTree([NotNull] Location location, [CanBeNull] SyntaxTree tree)
-        {
-            return location.IsInSource && location.SourceTree == tree;
-        }
-
-        private static void VerifyDiagnosticCount([NotNull] AnalysisResult result, DiagnosticsCaptureMode captureMode)
-        {
-            if (captureMode == DiagnosticsCaptureMode.RequireInSourceTree)
-            {
-                result.Diagnostics.Should().HaveSameCount(result.Spans);
-            }
-
-            result.Diagnostics.Should().HaveSameCount(result.Messages);
-        }
-
-        private static void VerifyDiagnostics([NotNull] AnalysisResult result, [NotNull] AnalyzerTestContext context)
-        {
-            for (int index = 0; index < result.Diagnostics.Count; index++)
-            {
-                Diagnostic diagnostic = result.Diagnostics[index];
-
-                if (context.DiagnosticsCaptureMode == DiagnosticsCaptureMode.RequireInSourceTree)
-                {
-                    VerifyDiagnosticLocation(diagnostic, result.Spans[index]);
+                    diagnostic.Location.SourceTree.Should().Be(tree);
                 }
 
-                diagnostic.GetMessage().Should().Be(result.Messages[index]);
+                yield return diagnostic;
             }
         }
 
-        private static void VerifyDiagnosticLocation([NotNull] Diagnostic diagnostic, TextSpan span)
+        private static void VerifyDiagnosticCount([NotNull] AnalysisResult result)
         {
-            diagnostic.Location.IsInSource.Should().BeTrue();
-            diagnostic.Location.SourceSpan.Should().Be(span);
+            result.DiagnosticsWithLocation.Should().HaveSameCount(result.SpansExpected);
+            result.Diagnostics.Should().HaveSameCount(result.MessagesExpected);
+        }
+
+        private static void VerifyDiagnostics([NotNull] AnalysisResult result)
+        {
+            VerifyDiagnosticMessages(result);
+            VerifyDiagnosticLocations(result);
+        }
+
+        private static void VerifyDiagnosticMessages([NotNull] AnalysisResult result)
+        {
+            int messageIndex = 0;
+            foreach (Diagnostic diagnostic in result.Diagnostics)
+            {
+                string messageActual = diagnostic.GetMessage();
+                string messageExpected = result.MessagesExpected[messageIndex];
+                messageActual.Should().Be(messageExpected);
+
+                messageIndex++;
+            }
+        }
+
+        private static void VerifyDiagnosticLocations([NotNull] AnalysisResult result)
+        {
+            int spanIndex = 0;
+            foreach (Diagnostic diagnostic in result.DiagnosticsWithLocation)
+            {
+                TextSpan locationSpanExpected = result.SpansExpected[spanIndex];
+                diagnostic.Location.SourceSpan.Should().Be(locationSpanExpected);
+
+                spanIndex++;
+            }
         }
 
         protected void AssertDiagnosticsWithCodeFixes([NotNull] FixProviderTestContext context,
@@ -191,12 +183,12 @@ namespace RoslynTestFramework
 
             AnalysisResult analysisResult = RunDiagnostics(context.AnalyzerTestContext, messages);
 
-            FixProviderTestContext fixContext = UpdateContextForWhitespaceHandling(context);
+            FixProviderTestContext fixContext = UpdateContextForComparisonMode(context);
             RunFixersForFirstDiagnostic(analysisResult, fixContext);
         }
 
         [NotNull]
-        private static FixProviderTestContext UpdateContextForWhitespaceHandling([NotNull] FixProviderTestContext context)
+        private static FixProviderTestContext UpdateContextForComparisonMode([NotNull] FixProviderTestContext context)
         {
             if (context.CodeComparisonMode == TextComparisonMode.IgnoreWhitespaceDifferences)
             {
@@ -294,22 +286,26 @@ namespace RoslynTestFramework
             public IList<Diagnostic> Diagnostics { get; }
 
             [NotNull]
-            public IList<TextSpan> Spans { get; }
+            [ItemNotNull]
+            public IList<Diagnostic> DiagnosticsWithLocation => Diagnostics.Where(d => d.Location.IsInSource).ToArray();
+
+            [NotNull]
+            public IList<TextSpan> SpansExpected { get; }
 
             [NotNull]
             [ItemNotNull]
-            public IList<string> Messages { get; }
+            public IList<string> MessagesExpected { get; }
 
-            public AnalysisResult([NotNull] [ItemNotNull] IList<Diagnostic> diagnostics, [NotNull] IList<TextSpan> spans,
-                [NotNull] [ItemNotNull] IList<string> messages)
+            public AnalysisResult([NotNull] [ItemNotNull] IList<Diagnostic> diagnostics, [NotNull] IList<TextSpan> spansExpected,
+                [NotNull] [ItemNotNull] IList<string> messagesExpected)
             {
                 FrameworkGuard.NotNull(diagnostics, nameof(diagnostics));
-                FrameworkGuard.NotNull(spans, nameof(spans));
-                FrameworkGuard.NotNull(messages, nameof(messages));
+                FrameworkGuard.NotNull(spansExpected, nameof(spansExpected));
+                FrameworkGuard.NotNull(messagesExpected, nameof(messagesExpected));
 
                 Diagnostics = diagnostics;
-                Spans = spans;
-                Messages = messages;
+                SpansExpected = spansExpected;
+                MessagesExpected = messagesExpected;
             }
         }
     }
