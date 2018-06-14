@@ -64,8 +64,8 @@ namespace RoslynTestFramework
         [ItemNotNull]
         private IList<Diagnostic> GetSortedAnalyzerDiagnostics([NotNull] Document document, [NotNull] AnalyzerTestContext context)
         {
-            IEnumerable<Diagnostic> diagnostics = EnumerateDiagnosticsForDocument(document,
-                context.ValidationMode, context.DiagnosticsCaptureMode, context.Options).Where(d => d.Id == DiagnosticId);
+            IEnumerable<Diagnostic> diagnostics =
+                EnumerateDiagnosticsForDocument(document, context).Where(d => d.Id == DiagnosticId);
 
             if (context.DiagnosticsCaptureMode == DiagnosticsCaptureMode.RequireInSourceTree)
             {
@@ -78,13 +78,14 @@ namespace RoslynTestFramework
         [NotNull]
         [ItemNotNull]
         private IEnumerable<Diagnostic> EnumerateDiagnosticsForDocument([NotNull] Document document,
-            TestValidationMode validationMode, DiagnosticsCaptureMode diagnosticsCaptureMode, [NotNull] AnalyzerOptions options)
+            [NotNull] AnalyzerTestContext context)
         {
-            CompilationWithAnalyzers compilationWithAnalyzers = GetCompilationWithAnalyzers(document, validationMode, options);
+            CompilationWithAnalyzers compilationWithAnalyzers =
+                GetCompilationWithAnalyzers(document, context.ValidationMode, context.Options);
 
             SyntaxTree tree = document.GetSyntaxTreeAsync().Result;
 
-            return EnumerateAnalyzerDiagnostics(compilationWithAnalyzers, tree, diagnosticsCaptureMode);
+            return EnumerateAnalyzerDiagnostics(compilationWithAnalyzers, tree, context.DiagnosticsCaptureMode);
         }
 
         [NotNull]
@@ -190,13 +191,27 @@ namespace RoslynTestFramework
 
             AnalysisResult analysisResult = RunDiagnostics(context.AnalyzerTestContext, messages);
 
-            if (context.IgnoreWhitespaceDifferences)
+            FixProviderTestContext fixContext = UpdateContextForWhitespaceHandling(context);
+            RunFixersForFirstDiagnostic(analysisResult, fixContext);
+        }
+
+        [NotNull]
+        private static FixProviderTestContext UpdateContextForWhitespaceHandling([NotNull] FixProviderTestContext context)
+        {
+            if (context.CodeComparisonMode == TextComparisonMode.IgnoreWhitespaceDifferences)
             {
                 ICollection<string> expectedCode = context.ExpectedCode
                     .Select(e => DocumentFactory.FormatSourceCode(e, context.AnalyzerTestContext)).ToArray();
-                context = context.WithExpectedCode(expectedCode);
+
+                return context.WithExpectedCode(expectedCode);
             }
 
+            return context;
+        }
+
+        private void RunFixersForFirstDiagnostic([NotNull] AnalysisResult analysisResult,
+            [NotNull] FixProviderTestContext context)
+        {
             CodeFixProvider fixProvider = CreateFixProvider();
 
             Diagnostic firstDiagnostic = analysisResult.Diagnostics.FirstOrDefault();
@@ -217,7 +232,10 @@ namespace RoslynTestFramework
                 ImmutableArray<CodeAction> codeFixes = GetCodeFixesForDiagnostic(diagnostic, document, fixProvider);
                 codeFixes.Should().HaveSameCount(context.ExpectedCode);
 
-                VerifyCodeAction(codeFixes[index], document, context.ExpectedCode[index], context.IgnoreWhitespaceDifferences);
+                bool formatOutputDocument = context.CodeComparisonMode == TextComparisonMode.IgnoreWhitespaceDifferences;
+
+                string actualCode = ApplyCodeAction(codeFixes[index], document, formatOutputDocument);
+                actualCode.Should().Be(context.ExpectedCode[index]);
             }
         }
 
@@ -238,32 +256,35 @@ namespace RoslynTestFramework
             }
         }
 
-        private static void VerifyCodeAction([NotNull] CodeAction codeAction, [NotNull] Document document,
-            [NotNull] string expectedCode, bool formatOutputDocument)
+        [NotNull]
+        private static string ApplyCodeAction([NotNull] CodeAction codeAction, [NotNull] Document document,
+            bool formatOutputDocument)
         {
-            FrameworkGuard.NotNull(codeAction, nameof(codeAction));
-            FrameworkGuard.NotNull(expectedCode, nameof(expectedCode));
-
             ImmutableArray<CodeActionOperation> operations = codeAction.GetOperationsAsync(CancellationToken.None).Result;
 
             operations.Should().HaveCount(1);
 
-            VerifyOperationText(document, operations.Single(), expectedCode, formatOutputDocument);
+            return GetTextForOperation(document, operations.Single(), formatOutputDocument);
         }
 
-        private static void VerifyOperationText([NotNull] Document sourceDocument, [NotNull] CodeActionOperation operation,
-            [NotNull] string expectedCode, bool formatOutputDocument)
+        [NotNull]
+        private static string GetTextForOperation([NotNull] Document document, [NotNull] CodeActionOperation operation,
+            bool formatOutputDocument)
         {
-            Workspace workspace = sourceDocument.Project.Solution.Workspace;
-            operation.Apply(workspace, CancellationToken.None);
+            Document newDocument = ApplyOperationToDocument(operation, document);
 
-            Document newDocument = workspace.CurrentSolution.GetDocument(sourceDocument.Id);
-
-            string actualCode = formatOutputDocument
+            return formatOutputDocument
                 ? DocumentFactory.FormatDocument(newDocument)
                 : newDocument.GetTextAsync().Result.ToString();
+        }
 
-            actualCode.Should().Be(expectedCode);
+        [NotNull]
+        private static Document ApplyOperationToDocument([NotNull] CodeActionOperation operation, [NotNull] Document document)
+        {
+            Workspace workspace = document.Project.Solution.Workspace;
+            operation.Apply(workspace, CancellationToken.None);
+
+            return workspace.CurrentSolution.GetDocument(document.Id);
         }
 
         private sealed class AnalysisResult

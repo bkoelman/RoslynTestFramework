@@ -42,8 +42,7 @@ namespace RoslynTestFramework
         public static Document ToDocument([NotNull] string code, [NotNull] AnalyzerTestContext context)
         {
             ParseOptions parseOptions = GetParseOptions(context.DocumentationMode, context.LanguageName);
-            CompilationOptions compilationOptions = GetCompilationOptions(context.LanguageName, context.OutputKind,
-                context.CompilerWarningLevel, context.WarningAsError);
+            CompilationOptions compilationOptions = GetCompilationOptions(context);
 
             Document document = new AdhocWorkspace()
                 .AddProject(context.AssemblyName, context.LanguageName)
@@ -64,16 +63,15 @@ namespace RoslynTestFramework
         }
 
         [NotNull]
-        private static CompilationOptions GetCompilationOptions([NotNull] string languageName, OutputKind outputKind,
-            [CanBeNull] int? compilerWarningLevel, bool warningAsError)
+        private static CompilationOptions GetCompilationOptions([NotNull] AnalyzerTestContext context)
         {
-            CompilationOptions options = languageName == LanguageNames.VisualBasic
+            CompilationOptions options = context.LanguageName == LanguageNames.VisualBasic
                 ? GetBasicCompilationOptions()
-                : GetCSharpCompilationOptions(compilerWarningLevel);
+                : GetCSharpCompilationOptions(context.CompilerWarningLevel);
 
-            options = options.WithOutputKind(outputKind);
+            options = options.WithOutputKind(context.OutputKind);
 
-            if (warningAsError)
+            if (context.WarningsAsErrors == TreatWarningsAsErrors.All)
             {
                 options = options.WithGeneralDiagnosticOption(ReportDiagnostic.Error);
             }
@@ -96,7 +94,6 @@ namespace RoslynTestFramework
             {
                 options = options.WithWarningLevel(compilerWarningLevel.Value);
             }
-
 
             return options;
         }

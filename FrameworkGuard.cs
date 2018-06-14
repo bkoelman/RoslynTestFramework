@@ -5,7 +5,7 @@ using JetBrains.Annotations;
 namespace RoslynTestFramework
 {
     /// <summary>
-    /// Member precondition checks.
+    /// Parameter validations, intended to be used for member precondition checks.
     /// </summary>
     internal static class FrameworkGuard
     {

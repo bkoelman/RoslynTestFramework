@@ -118,26 +118,39 @@ namespace RoslynTestFramework
                 }
             }
 
-            private int GetNextSpanStart(int offset, out char spanKind)
+            private (int spanStartIndex, char spanKind) GetNextSpanStart(int offset)
             {
+                int startIndex = offset;
+
                 while (true)
                 {
-                    int index = markupCode.IndexOf(SpanOpenText, offset, StringComparison.Ordinal);
+                    int index = markupCode.IndexOf(SpanOpenText, startIndex, StringComparison.Ordinal);
 
-                    if (index == -1 || index >= markupCode.Length - 1)
+                    (int, char)? result = TryGetNextSpanStartForIndex(index);
+                    if (result != null)
                     {
-                        spanKind = '?';
-                        return -1;
+                        return result.Value;
                     }
 
-                    spanKind = markupCode[index + 1];
-                    if (SpanKinds.Contains(spanKind))
-                    {
-                        return index;
-                    }
-
-                    offset = index + 1;
+                    startIndex = index + 1;
                 }
+            }
+
+            [CanBeNull]
+            private (int spanStartIndex, char spanKind)? TryGetNextSpanStartForIndex(int index)
+            {
+                if (index == -1 || index >= markupCode.Length - 1)
+                {
+                    return (-1, '?');
+                }
+
+                char spanKind = markupCode[index + 1];
+                if (SpanKinds.Contains(spanKind))
+                {
+                    return (index, spanKind);
+                }
+
+                return null;
             }
 
             private int GetNextSpanEnd(int start, char spanKind)
@@ -167,46 +180,58 @@ namespace RoslynTestFramework
                 string spanInnerText = markupCode.Substring(spanStartIndex + SpanTextLength,
                     spanEndIndex - spanStartIndex - SpanTextLength);
 
-                if (spanInnerText.Length == 0)
+                TextBlock textBlock = TryCreateTextBlockForSpan(spanInnerText, spanKind);
+                if (textBlock != null)
                 {
-                    return;
+                    TextBlocks.Add(textBlock);
+                }
+            }
+
+            [CanBeNull]
+            private TextBlock TryCreateTextBlockForSpan([NotNull] string spanInnerText, char spanKind)
+            {
+                if (spanInnerText.Length != 0)
+                {
+                    switch (spanKind)
+                    {
+                        case '|':
+                        {
+                            return new MarkedTextBlock(spanInnerText);
+                        }
+                        case '+':
+                        {
+                            return new InsertedTextBlock(spanInnerText);
+                        }
+                        case '-':
+                        {
+                            return new DeletedTextBlock(spanInnerText);
+                        }
+                        case '*':
+                        {
+                            return CreateReplacedTextBlock(spanInnerText);
+                        }
+                    }
                 }
 
-                switch (spanKind)
+                return null;
+            }
+
+            [NotNull]
+            private static ReplacedTextBlock CreateReplacedTextBlock([NotNull] string spanInnerText)
+            {
+                string[] parts = spanInnerText.Split(ReplaceSeparatorArray, StringSplitOptions.None);
+
+                if (parts.Length == 1)
                 {
-                    case '|':
-                    {
-                        TextBlocks.Add(new MarkedTextBlock(spanInnerText));
-                        break;
-                    }
-                    case '+':
-                    {
-                        TextBlocks.Add(new InsertedTextBlock(spanInnerText));
-                        break;
-                    }
-                    case '-':
-                    {
-                        TextBlocks.Add(new DeletedTextBlock(spanInnerText));
-                        break;
-                    }
-                    case '*':
-                    {
-                        string[] parts = spanInnerText.Split(ReplaceSeparatorArray, StringSplitOptions.None);
-
-                        if (parts.Length == 1)
-                        {
-                            throw new Exception($"Missing '{ReplaceSeparator}' in source.");
-                        }
-
-                        if (parts.Length > 2)
-                        {
-                            throw new Exception($"Multiple '{ReplaceSeparator}' in source.");
-                        }
-
-                        TextBlocks.Add(new ReplacedTextBlock(parts[0], parts[1]));
-                        break;
-                    }
+                    throw new Exception($"Missing '{ReplaceSeparator}' in source.");
                 }
+
+                if (parts.Length > 2)
+                {
+                    throw new Exception($"Multiple '{ReplaceSeparator}' in source.");
+                }
+
+                return new ReplacedTextBlock(parts[0], parts[1]);
             }
 
             private void AppendLastCodeBlock(int offset)
@@ -269,7 +294,7 @@ namespace RoslynTestFramework
                 private void LocateFirstSpanStart()
                 {
                     offset = 0;
-                    spanStartIndex = parser.GetNextSpanStart(offset, out spanKind);
+                    (spanStartIndex, spanKind) = parser.GetNextSpanStart(offset);
                 }
 
                 private void LoopOverText()
@@ -305,7 +330,7 @@ namespace RoslynTestFramework
                 private void LocateNextSpanStart()
                 {
                     offset = spanEndIndex + SpanTextLength;
-                    spanStartIndex = parser.GetNextSpanStart(offset, out spanKind);
+                    (spanStartIndex, spanKind) = parser.GetNextSpanStart(offset);
                 }
 
                 private void AppendCodeBlockAfterSpanEnd()

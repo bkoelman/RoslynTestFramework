@@ -14,17 +14,17 @@ namespace RoslynTestFramework
         [ItemNotNull]
         public ImmutableList<string> ExpectedCode { get; }
 
-        public bool IgnoreWhitespaceDifferences { get; }
+        public TextComparisonMode CodeComparisonMode { get; }
 
         public FixProviderTestContext([NotNull] AnalyzerTestContext analyzerTestContext,
-            [NotNull] [ItemNotNull] IEnumerable<string> expectedCode, bool ignoreWhitespaceDifferences)
+            [NotNull] [ItemNotNull] IEnumerable<string> expectedCode, TextComparisonMode codeComparisonMode)
         {
             FrameworkGuard.NotNull(analyzerTestContext, nameof(analyzerTestContext));
             FrameworkGuard.NotNull(expectedCode, nameof(expectedCode));
 
             AnalyzerTestContext = analyzerTestContext;
             ExpectedCode = ImmutableList.CreateRange(expectedCode);
-            IgnoreWhitespaceDifferences = ignoreWhitespaceDifferences;
+            CodeComparisonMode = codeComparisonMode;
         }
 
         [NotNull]
@@ -32,7 +32,7 @@ namespace RoslynTestFramework
         {
             FrameworkGuard.NotNull(expectedCode, nameof(expectedCode));
 
-            return new FixProviderTestContext(AnalyzerTestContext, expectedCode, IgnoreWhitespaceDifferences);
+            return new FixProviderTestContext(AnalyzerTestContext, expectedCode, CodeComparisonMode);
         }
     }
 }
