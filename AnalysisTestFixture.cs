@@ -129,12 +129,22 @@ namespace RoslynTestFramework
         {
             foreach (Diagnostic diagnostic in compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result)
             {
+                ThrowForCrashingAnalyzer(diagnostic);
+
                 if (diagnostic.Location.IsInSource)
                 {
                     diagnostic.Location.SourceTree.Should().Be(tree);
                 }
 
                 yield return diagnostic;
+            }
+        }
+
+        private static void ThrowForCrashingAnalyzer([NotNull] Diagnostic diagnostic)
+        {
+            if (diagnostic.Id == "AD0001")
+            {
+                throw new Exception(diagnostic.Descriptor.Description.ToString());
             }
         }
 
