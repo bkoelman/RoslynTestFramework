@@ -190,26 +190,23 @@ namespace RoslynTestFramework
             [CanBeNull]
             private TextBlock TryCreateTextBlockForSpan([NotNull] string spanInnerText, char spanKind)
             {
-                if (spanInnerText.Length != 0)
+                switch (spanKind)
                 {
-                    switch (spanKind)
+                    case '|':
                     {
-                        case '|':
-                        {
-                            return new MarkedTextBlock(spanInnerText);
-                        }
-                        case '+':
-                        {
-                            return new InsertedTextBlock(spanInnerText);
-                        }
-                        case '-':
-                        {
-                            return new DeletedTextBlock(spanInnerText);
-                        }
-                        case '*':
-                        {
-                            return CreateReplacedTextBlock(spanInnerText);
-                        }
+                        return new MarkedTextBlock(spanInnerText);
+                    }
+                    case '+':
+                    {
+                        return new InsertedTextBlock(spanInnerText);
+                    }
+                    case '-':
+                    {
+                        return new DeletedTextBlock(spanInnerText);
+                    }
+                    case '*':
+                    {
+                        return CreateReplacedTextBlock(spanInnerText);
                     }
                 }
 
@@ -236,22 +233,30 @@ namespace RoslynTestFramework
 
             private void AppendLastCodeBlock(int offset)
             {
-                AssertSpanIsClosed(offset);
-
-                string text = markupCode.Substring(offset);
-                if (text.Length > 0)
+                if (HasMoreText(offset))
                 {
-                    TextBlocks.Add(new StaticTextBlock(text));
+                    AssertLastSpanIsClosed(offset);
+
+                    string text = markupCode.Substring(offset);
+                    if (text.Length > 0)
+                    {
+                        TextBlocks.Add(new StaticTextBlock(text));
+                    }
                 }
             }
 
-            private void AssertSpanIsClosed(int offset)
+            private bool HasMoreText(int offset)
+            {
+                return markupCode.Length - offset > 0;
+            }
+
+            private void AssertLastSpanIsClosed(int offset)
             {
                 foreach (char spanKind in SpanKinds)
                 {
                     string spanEndText = spanKind + SpanCloseText;
 
-                    int index = markupCode.IndexOf(spanEndText, offset + SpanTextLength, StringComparison.Ordinal);
+                    int index = markupCode.IndexOf(spanEndText, offset, StringComparison.Ordinal);
                     if (index != -1)
                     {
                         throw new Exception($"Additional '{spanEndText}' found in source.");
