@@ -28,10 +28,10 @@ namespace RoslynTestFramework
         private readonly IList<TextBlock> blocks;
 
         [NotNull]
-        public string SourceText => string.Concat(blocks.Select(x => x.TextBefore));
+        public string SourceText => string.Concat(blocks.Select(block => block.TextBefore));
 
         [NotNull]
-        public string ExpectedText => string.Concat(blocks.Select(x => x.TextAfter));
+        public string ExpectedText => string.Concat(blocks.Select(block => block.TextAfter));
 
         [NotNull]
         public IList<TextSpan> SourceSpans { get; }
@@ -44,7 +44,7 @@ namespace RoslynTestFramework
             parser.Parse();
 
             blocks = parser.TextBlocks;
-            SourceSpans = parser.TextSpans.OrderBy(s => s).ToImmutableArray();
+            SourceSpans = parser.TextSpans.OrderBy(span => span).ToImmutableArray();
         }
 
         private sealed class MarkupParser

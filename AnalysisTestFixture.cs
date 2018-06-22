@@ -64,8 +64,8 @@ namespace RoslynTestFramework
         [ItemNotNull]
         private IList<Diagnostic> GetSortedAnalyzerDiagnostics([NotNull] Document document, [NotNull] AnalyzerTestContext context)
         {
-            return EnumerateDiagnosticsForDocument(document, context).Where(d => d.Id == DiagnosticId)
-                .OrderBy(d => d.Location.SourceSpan).ToImmutableArray();
+            return EnumerateDiagnosticsForDocument(document, context).Where(diagnostic => diagnostic.Id == DiagnosticId)
+                .OrderBy(diagnostic => diagnostic.Location.SourceSpan).ToImmutableArray();
         }
 
         [NotNull]
@@ -118,7 +118,8 @@ namespace RoslynTestFramework
 
         private void ValidateCompileErrors([ItemNotNull] ImmutableArray<Diagnostic> compilerDiagnostics)
         {
-            Diagnostic[] compilerErrors = compilerDiagnostics.Where(d => d.Severity == DiagnosticSeverity.Error).ToArray();
+            Diagnostic[] compilerErrors = compilerDiagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
+                .ToArray();
             compilerErrors.Should().BeEmpty("test should not have compile errors");
         }
 
@@ -203,7 +204,7 @@ namespace RoslynTestFramework
             if (context.CodeComparisonMode == TextComparisonMode.IgnoreWhitespaceDifferences)
             {
                 ICollection<string> expectedCode = context.ExpectedCode
-                    .Select(e => DocumentFactory.FormatSourceCode(e, context.AnalyzerTestContext)).ToArray();
+                    .Select(code => DocumentFactory.FormatSourceCode(code, context.AnalyzerTestContext)).ToArray();
 
                 return context.WithExpectedCode(expectedCode);
             }
@@ -297,7 +298,8 @@ namespace RoslynTestFramework
 
             [NotNull]
             [ItemNotNull]
-            public IList<Diagnostic> DiagnosticsWithLocation => Diagnostics.Where(d => d.Location.IsInSource).ToArray();
+            public IList<Diagnostic> DiagnosticsWithLocation =>
+                Diagnostics.Where(diagnostic => diagnostic.Location.IsInSource).ToArray();
 
             [NotNull]
             public IList<TextSpan> SpansExpected { get; }
