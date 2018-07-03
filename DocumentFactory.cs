@@ -22,11 +22,19 @@ namespace RoslynTestFramework
 
         [NotNull]
         private static readonly CSharpParseOptions DefaultCSharpParseOptions =
+#if NET45
+            new CSharpParseOptions();
+#else
             new CSharpParseOptions(CSharpLanguageVersion.Latest);
+#endif
 
         [NotNull]
         private static readonly VisualBasicParseOptions DefaultBasicParseOptions =
+#if NET45
+            new VisualBasicParseOptions();
+#else
             new VisualBasicParseOptions(VisualBasicLanguageVersion.Latest);
+#endif
 
         [NotNull]
         public string FormatSourceCode([NotNull] string sourceCode, [NotNull] AnalyzerTestContext context)
