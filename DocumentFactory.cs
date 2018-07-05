@@ -22,7 +22,7 @@ namespace RoslynTestFramework
 
         [NotNull]
         private static readonly CSharpParseOptions DefaultCSharpParseOptions =
-#if NET45
+#if NET45 || NET452
             new CSharpParseOptions();
 #else
             new CSharpParseOptions(CSharpLanguageVersion.Latest);
@@ -30,7 +30,7 @@ namespace RoslynTestFramework
 
         [NotNull]
         private static readonly VisualBasicParseOptions DefaultBasicParseOptions =
-#if NET45
+#if NET45 || NET452
             new VisualBasicParseOptions();
 #else
             new VisualBasicParseOptions(VisualBasicLanguageVersion.Latest);
