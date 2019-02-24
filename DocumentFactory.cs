@@ -25,7 +25,7 @@ namespace RoslynTestFramework
 #if NET45 || NET452
             new CSharpParseOptions();
 #else
-            new CSharpParseOptions(CSharpLanguageVersion.Latest);
+            new CSharpParseOptions(CSharpLanguageVersion.Preview);
 #endif
 
         [NotNull]
@@ -83,6 +83,13 @@ namespace RoslynTestFramework
             {
                 options = options.WithGeneralDiagnosticOption(ReportDiagnostic.Error);
             }
+
+#if !NET45 && !NET452
+            if (context.NullableReferenceTypesSupport == NullableReferenceTypesSupport.Enabled && context.LanguageName == LanguageNames.CSharp)
+            {
+                options = ((CSharpCompilationOptions)options).WithNullableContextOptions(NullableContextOptions.Enable);
+            }
+#endif
 
             return options;
         }

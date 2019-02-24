@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.IO;
+using System.Reflection;
 using System.Threading;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
@@ -35,12 +36,17 @@ namespace RoslynTestFramework
                 throw new InvalidOperationException("Failed to locate assembly for System.Object.");
             }
 
+            // Bug workaround for test runner in VS2019, which fails to load ValueTask due to missing dependency.
+            Assembly netStandardAssembly =
+                Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
+
             return ImmutableHashSet.Create(new MetadataReference[]
             {
                 MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.dll")),
                 MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Core.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll"))
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(netStandardAssembly.Location)
             });
         }
 
@@ -77,13 +83,16 @@ namespace RoslynTestFramework
         [NotNull]
         public AnalyzerOptions Options { get; }
 
+        public NullableReferenceTypesSupport NullableReferenceTypesSupport { get; }
+
 #pragma warning disable AV1561 // Signature contains more than 3 parameters
 #pragma warning disable AV1500 // Member or local function contains more than 7 statements
         private AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] string fileName, [NotNull] string assemblyName,
             [NotNull] [ItemNotNull] ImmutableHashSet<MetadataReference> references, DocumentationMode documentationMode,
             OutputKind outputKind, [CanBeNull] int? compilerWarningLevel, TreatWarningsAsErrors warningsAsErrors,
-            TestValidationMode validationMode, [NotNull] AnalyzerOptions options)
+            TestValidationMode validationMode, [NotNull] AnalyzerOptions options,
+            NullableReferenceTypesSupport nullableReferenceTypesSupport)
         {
             SourceCode = sourceCode;
             SourceSpans = sourceSpans;
@@ -97,6 +106,7 @@ namespace RoslynTestFramework
             WarningsAsErrors = warningsAsErrors;
             ValidationMode = validationMode;
             Options = options;
+            NullableReferenceTypesSupport = nullableReferenceTypesSupport;
         }
 #pragma warning restore AV1500 // Member or local function contains more than 7 statements
 #pragma warning restore AV1561 // Signature contains more than 3 parameters
@@ -105,7 +115,8 @@ namespace RoslynTestFramework
         public AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] AnalyzerOptions options)
             : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferencesLazy.Value,
-                DefaultDocumentationMode, DefaultOutputKind, null, TreatWarningsAsErrors.None, DefaultTestValidationMode, options)
+                DefaultDocumentationMode, DefaultOutputKind, null, TreatWarningsAsErrors.None, DefaultTestValidationMode, options,
+                NullableReferenceTypesSupport.Disabled)
         {
             FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
             FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
@@ -121,7 +132,8 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
 
             return new AnalyzerTestContext(sourceCode, sourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
@@ -130,14 +142,16 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNullNorWhiteSpace(fileName, nameof(fileName));
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, fileName, AssemblyName, References,
-                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
         public AnalyzerTestContext InAssemblyNamed([NotNull] string assemblyName)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, assemblyName, References,
-                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
@@ -147,42 +161,46 @@ namespace RoslynTestFramework
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName,
                 references.ToImmutableHashSet(), DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors,
-                ValidationMode, Options);
+                ValidationMode, Options, NullableReferenceTypesSupport);
         }
 
         [NotNull]
         public AnalyzerTestContext WithDocumentationMode(DocumentationMode mode)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References, mode,
-                OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options);
+                OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options, NullableReferenceTypesSupport);
         }
 
         [NotNull]
         public AnalyzerTestContext WithOutputKind(OutputKind outputKind)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, outputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options);
+                DocumentationMode, outputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
         public AnalyzerTestContext CompileAtWarningLevel(int warningLevel)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, OutputKind, warningLevel, WarningsAsErrors, ValidationMode, Options);
+                DocumentationMode, OutputKind, warningLevel, WarningsAsErrors, ValidationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
         public AnalyzerTestContext CompileWithWarningsAsErrors(TreatWarningsAsErrors warningsAsErrors)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, OutputKind, CompilerWarningLevel, warningsAsErrors, ValidationMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, warningsAsErrors, ValidationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
         public AnalyzerTestContext InValidationMode(TestValidationMode validationMode)
         {
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, validationMode, Options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, validationMode, Options,
+                NullableReferenceTypesSupport);
         }
 
         [NotNull]
@@ -191,7 +209,15 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNull(options, nameof(options));
 
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
-                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, options);
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, options,
+                NullableReferenceTypesSupport);
+        }
+
+        [NotNull]
+        public AnalyzerTestContext WithNullableReferenceTypesSupport(NullableReferenceTypesSupport support)
+        {
+            return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName, References,
+                DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors, ValidationMode, Options, support);
         }
     }
 }
