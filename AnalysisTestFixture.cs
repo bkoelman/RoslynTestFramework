@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 using FluentAssertions;
 using JetBrains.Annotations;
 using Microsoft.CodeAnalysis;
@@ -195,7 +196,20 @@ namespace RoslynTestFramework
             AnalysisResult analysisResult = RunDiagnostics(context.AnalyzerTestContext, messages);
 
             FixProviderTestContext fixContext = UpdateContextForComparisonMode(context);
-            RunFixersForFirstDiagnostic(analysisResult, fixContext);
+            RunCodeFixesForFirstDiagnostic(analysisResult, fixContext);
+        }
+
+        protected void AssertDiagnosticsWithAllCodeFixes([NotNull] FixProviderTestContext context,
+            [NotNull] [ItemNotNull] params string[] messages)
+        {
+            FrameworkGuard.NotNull(context, nameof(context));
+            FrameworkGuard.NotNull(messages, nameof(messages));
+
+            AnalysisResult analysisResult = RunDiagnostics(context.AnalyzerTestContext, messages);
+
+            FixProviderTestContext fixContext = UpdateContextForComparisonMode(context);
+
+            RunAllCodeFixesForDiagnostics(analysisResult.Diagnostics, fixContext);
         }
 
         [NotNull]
@@ -212,7 +226,7 @@ namespace RoslynTestFramework
             return context;
         }
 
-        private void RunFixersForFirstDiagnostic([NotNull] AnalysisResult analysisResult,
+        private void RunCodeFixesForFirstDiagnostic([NotNull] AnalysisResult analysisResult,
             [NotNull] FixProviderTestContext context)
         {
             CodeFixProvider fixProvider = CreateFixProvider();
@@ -220,11 +234,11 @@ namespace RoslynTestFramework
             Diagnostic firstDiagnostic = analysisResult.Diagnostics.FirstOrDefault();
             if (firstDiagnostic != null)
             {
-                RunCodeFixes(context, firstDiagnostic, fixProvider);
+                RunCodeFixesForDiagnostic(context, firstDiagnostic, fixProvider);
             }
         }
 
-        private void RunCodeFixes([NotNull] FixProviderTestContext context, [NotNull] Diagnostic diagnostic,
+        private void RunCodeFixesForDiagnostic([NotNull] FixProviderTestContext context, [NotNull] Diagnostic diagnostic,
             [NotNull] CodeFixProvider fixProvider)
         {
             for (int index = 0; index < context.ExpectedCode.Count; index++)
@@ -235,10 +249,7 @@ namespace RoslynTestFramework
                 ImmutableArray<CodeAction> codeFixes = GetCodeFixesForDiagnostic(diagnostic, document, fixProvider);
                 codeFixes.Should().HaveSameCount(context.ExpectedCode);
 
-                bool formatOutputDocument = context.CodeComparisonMode == TextComparisonMode.IgnoreWhitespaceDifferences;
-
-                string actualCode = ApplyCodeAction(codeFixes[index], document, formatOutputDocument);
-                actualCode.Should().Be(context.ExpectedCode[index]);
+                VerifyResultOfCodeFix(codeFixes[index], document, context, context.ExpectedCode[index]);
             }
         }
 
@@ -257,6 +268,46 @@ namespace RoslynTestFramework
             {
                 builder.Add(codeAction);
             }
+        }
+
+        private void RunAllCodeFixesForDiagnostics([NotNull] [ItemNotNull] IList<Diagnostic> diagnostics,
+            [NotNull] FixProviderTestContext context)
+        {
+            CodeFixProvider fixProvider = CreateFixProvider();
+
+            var diagnosticProvider = new SimpleDiagnosticProvider(diagnostics);
+
+            for (int index = 0; index < context.ExpectedCode.Count; index++)
+            {
+                Document document =
+                    DocumentFactory.ToDocument(context.AnalyzerTestContext.SourceCode, context.AnalyzerTestContext);
+
+                string equivalenceKey = context.EquivalenceKeysForFixAll[index];
+                CodeAction codeFix = GetCodeFixForEquivalenceKey(equivalenceKey, document, fixProvider, diagnosticProvider);
+
+                string expectedCode = context.ExpectedCode[index];
+                VerifyResultOfCodeFix(codeFix, document, context, expectedCode);
+            }
+        }
+
+        [NotNull]
+        private static CodeAction GetCodeFixForEquivalenceKey([NotNull] string equivalenceKey, [NotNull] Document document,
+            [NotNull] CodeFixProvider fixProvider, [NotNull] SimpleDiagnosticProvider diagnosticProvider)
+        {
+            var fixAllContext = new FixAllContext(document, fixProvider, FixAllScope.Document, equivalenceKey,
+                fixProvider.FixableDiagnosticIds, diagnosticProvider, CancellationToken.None);
+
+            FixAllProvider fixAllProvider = fixProvider.GetFixAllProvider();
+            return fixAllProvider.GetFixAsync(fixAllContext).Result;
+        }
+
+        private static void VerifyResultOfCodeFix([NotNull] CodeAction fixAction, [NotNull] Document document,
+            [NotNull] FixProviderTestContext context, [NotNull] string expectedCode)
+        {
+            bool formatOutputDocument = context.CodeComparisonMode == TextComparisonMode.IgnoreWhitespaceDifferences;
+
+            string actualCode = ApplyCodeAction(fixAction, document, formatOutputDocument);
+            actualCode.Should().Be(expectedCode);
         }
 
         [NotNull]
@@ -318,6 +369,43 @@ namespace RoslynTestFramework
                 Diagnostics = diagnostics;
                 SpansExpected = spansExpected;
                 MessagesExpected = messagesExpected;
+            }
+        }
+
+        private sealed class SimpleDiagnosticProvider : FixAllContext.DiagnosticProvider
+        {
+            [NotNull]
+            [ItemNotNull]
+            private readonly IEnumerable<Diagnostic> diagnostics;
+
+            public SimpleDiagnosticProvider([NotNull] [ItemNotNull] IEnumerable<Diagnostic> diagnostics)
+            {
+                FrameworkGuard.NotNull(diagnostics, nameof(diagnostics));
+                this.diagnostics = diagnostics;
+            }
+
+            [NotNull]
+            [ItemNotNull]
+            public override Task<IEnumerable<Diagnostic>> GetDocumentDiagnosticsAsync([NotNull] Document document,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(diagnostics);
+            }
+
+            [NotNull]
+            [ItemNotNull]
+            public override Task<IEnumerable<Diagnostic>> GetProjectDiagnosticsAsync([NotNull] Project project,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(diagnostics);
+            }
+
+            [NotNull]
+            [ItemNotNull]
+            public override Task<IEnumerable<Diagnostic>> GetAllDiagnosticsAsync([NotNull] Project project,
+                CancellationToken cancellationToken)
+            {
+                return Task.FromResult(diagnostics);
             }
         }
     }
