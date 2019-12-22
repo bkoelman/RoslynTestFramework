@@ -55,7 +55,7 @@ namespace RoslynTestFramework
         [NotNull]
         private AnalysisResult GetAnalysisResult([NotNull] AnalyzerTestContext context, [NotNull] [ItemNotNull] string[] messages)
         {
-            Document document = DocumentFactory.ToDocument(context.SourceCode, context);
+            var document = DocumentFactory.ToDocument(context.SourceCode, context);
 
             IList<Diagnostic> diagnostics = GetSortedAnalyzerDiagnostics(document, context);
             return new AnalysisResult(diagnostics, context.SourceSpans, messages);
@@ -243,7 +243,7 @@ namespace RoslynTestFramework
         {
             for (int index = 0; index < context.ExpectedCode.Count; index++)
             {
-                Document document =
+                var document =
                     DocumentFactory.ToDocument(context.AnalyzerTestContext.SourceCode, context.AnalyzerTestContext);
 
                 ImmutableArray<CodeAction> codeFixes = GetCodeFixesForDiagnostic(diagnostic, document, fixProvider);
@@ -279,7 +279,7 @@ namespace RoslynTestFramework
 
             for (int index = 0; index < context.ExpectedCode.Count; index++)
             {
-                Document document =
+                var document =
                     DocumentFactory.ToDocument(context.AnalyzerTestContext.SourceCode, context.AnalyzerTestContext);
 
                 string equivalenceKey = context.EquivalenceKeysForFixAll[index];
