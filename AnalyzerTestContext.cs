@@ -60,7 +60,6 @@ namespace RoslynTestFramework
 
         public NullableReferenceTypesSupport NullableReferenceTypesSupport { get; }
 
-#pragma warning disable AV1561 // Signature contains more than 3 parameters
         public AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] AnalyzerOptions options)
             : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferencesLazy.Value,
@@ -72,10 +71,9 @@ namespace RoslynTestFramework
             FrameworkGuard.NotNullNorWhiteSpace(languageName, nameof(languageName));
             FrameworkGuard.NotNull(options, nameof(options));
         }
-#pragma warning restore AV1561 // Signature contains more than 3 parameters
 
-#pragma warning disable AV1561 // Signature contains more than 3 parameters
-#pragma warning disable AV1500 // Member or local function contains more than 7 statements
+#pragma warning disable AV1561 // Signature contains too many parameters
+#pragma warning disable AV1500 // Member or local function contains too many statements
         private AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] string fileName, [NotNull] string assemblyName,
             [NotNull] [ItemNotNull] ImmutableHashSet<MetadataReference> references, DocumentationMode documentationMode,
@@ -97,8 +95,8 @@ namespace RoslynTestFramework
             Options = options;
             NullableReferenceTypesSupport = nullableReferenceTypesSupport;
         }
-#pragma warning restore AV1500 // Member or local function contains more than 7 statements
-#pragma warning restore AV1561 // Signature contains more than 3 parameters
+#pragma warning restore AV1500 // Member or local function contains too many statements
+#pragma warning restore AV1561 // Signature contains too many parameters
 
         [NotNull]
         [ItemNotNull]
