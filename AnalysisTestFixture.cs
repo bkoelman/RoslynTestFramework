@@ -92,6 +92,7 @@ namespace RoslynTestFramework
             compilation = EnsureAnalyzerIsEnabled(analyzer, compilation);
 
             ImmutableArray<Diagnostic> compilerDiagnostics = compilation.GetDiagnostics(CancellationToken.None);
+
             if (validationMode != TestValidationMode.AllowCompileErrors)
             {
                 ValidateCompileErrors(compilerDiagnostics);
@@ -121,6 +122,7 @@ namespace RoslynTestFramework
         {
             Diagnostic[] compilerErrors = compilerDiagnostics.Where(diagnostic => diagnostic.Severity == DiagnosticSeverity.Error)
                 .ToArray();
+
             compilerErrors.Should().BeEmpty("test should not have compile errors");
         }
 
@@ -165,6 +167,7 @@ namespace RoslynTestFramework
         private static void VerifyDiagnosticMessages([NotNull] AnalysisResult result)
         {
             int messageIndex = 0;
+
             foreach (Diagnostic diagnostic in result.Diagnostics)
             {
                 string messageActual = diagnostic.GetMessage();
@@ -178,6 +181,7 @@ namespace RoslynTestFramework
         private static void VerifyDiagnosticLocations([NotNull] AnalysisResult result)
         {
             int spanIndex = 0;
+
             foreach (Diagnostic diagnostic in result.DiagnosticsWithLocation)
             {
                 TextSpan locationSpanExpected = result.SpansExpected[spanIndex];
@@ -232,6 +236,7 @@ namespace RoslynTestFramework
             CodeFixProvider fixProvider = CreateFixProvider();
 
             Diagnostic firstDiagnostic = analysisResult.Diagnostics.FirstOrDefault();
+
             if (firstDiagnostic != null)
             {
                 RunCodeFixesForDiagnostic(context, firstDiagnostic, fixProvider);

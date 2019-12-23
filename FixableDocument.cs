@@ -105,6 +105,7 @@ namespace RoslynTestFramework
             private void CalculateSpans()
             {
                 int offset = 0;
+
                 foreach (TextBlock block in TextBlocks)
                 {
                     int blockLength = block.TextBefore.Length;
@@ -127,6 +128,7 @@ namespace RoslynTestFramework
                     int index = markupCode.IndexOf(SpanOpenText, startIndex, StringComparison.Ordinal);
 
                     (int, char)? result = TryGetNextSpanStartForIndex(index);
+
                     if (result != null)
                     {
                         return result.Value;
@@ -145,6 +147,7 @@ namespace RoslynTestFramework
                 }
 
                 char spanKind = markupCode[index + 1];
+
                 if (SpanKinds.Contains(spanKind))
                 {
                     return (index, spanKind);
@@ -158,6 +161,7 @@ namespace RoslynTestFramework
                 string spanEndText = spanKind + SpanCloseText;
 
                 int index = markupCode.IndexOf(spanEndText, start + SpanTextLength, StringComparison.Ordinal);
+
                 if (index == -1)
                 {
                     throw new Exception($"Missing '{spanEndText}' in source.");
@@ -181,6 +185,7 @@ namespace RoslynTestFramework
                     spanEndIndex - spanStartIndex - SpanTextLength);
 
                 TextBlock textBlock = TryCreateTextBlockForSpan(spanInnerText, spanKind);
+
                 if (textBlock != null)
                 {
                     TextBlocks.Add(textBlock);
@@ -238,6 +243,7 @@ namespace RoslynTestFramework
                     AssertLastSpanIsClosed(offset);
 
                     string text = markupCode.Substring(offset);
+
                     if (text.Length > 0)
                     {
                         TextBlocks.Add(new StaticTextBlock(text));
@@ -257,6 +263,7 @@ namespace RoslynTestFramework
                     string spanEndText = spanKind + SpanCloseText;
 
                     int index = markupCode.IndexOf(spanEndText, offset, StringComparison.Ordinal);
+
                     if (index != -1)
                     {
                         throw new Exception($"Additional '{spanEndText}' found in source.");
@@ -370,7 +377,10 @@ namespace RoslynTestFramework
             {
             }
 
-            public override string ToString() => TextBefore;
+            public override string ToString()
+            {
+                return TextBefore;
+            }
         }
 
         private sealed class MarkedTextBlock : TextBlock
@@ -393,7 +403,10 @@ namespace RoslynTestFramework
             {
             }
 
-            public override string ToString() => "+" + TextAfter;
+            public override string ToString()
+            {
+                return "+" + TextAfter;
+            }
         }
 
         private sealed class DeletedTextBlock : TextBlock
@@ -403,7 +416,10 @@ namespace RoslynTestFramework
             {
             }
 
-            public override string ToString() => "-" + TextBefore;
+            public override string ToString()
+            {
+                return "-" + TextBefore;
+            }
         }
 
         private sealed class ReplacedTextBlock : TextBlock
@@ -413,7 +429,10 @@ namespace RoslynTestFramework
             {
             }
 
-            public override string ToString() => TextBefore + "=>" + TextAfter;
+            public override string ToString()
+            {
+                return TextBefore + "=>" + TextAfter;
+            }
         }
     }
 }

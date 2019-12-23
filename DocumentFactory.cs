@@ -85,7 +85,8 @@ namespace RoslynTestFramework
             }
 
 #if !NET45 && !NET452
-            if (context.NullableReferenceTypesSupport == NullableReferenceTypesSupport.Enabled && context.LanguageName == LanguageNames.CSharp)
+            if (context.NullableReferenceTypesSupport == NullableReferenceTypesSupport.Enabled &&
+                context.LanguageName == LanguageNames.CSharp)
             {
                 options = ((CSharpCompilationOptions)options).WithNullableContextOptions(NullableContextOptions.Enable);
             }

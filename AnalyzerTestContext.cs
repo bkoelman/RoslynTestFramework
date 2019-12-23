@@ -26,31 +26,6 @@ namespace RoslynTestFramework
             new Lazy<ImmutableHashSet<MetadataReference>>(ResolveDefaultReferences, LazyThreadSafetyMode.PublicationOnly);
 
         [NotNull]
-        [ItemNotNull]
-        private static ImmutableHashSet<MetadataReference> ResolveDefaultReferences()
-        {
-            string assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
-
-            if (assemblyPath == null)
-            {
-                throw new InvalidOperationException("Failed to locate assembly for System.Object.");
-            }
-
-            // Bug workaround for test runner in VS2019, which fails to load ValueTask due to missing dependency.
-            Assembly netStandardAssembly =
-                Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
-
-            return ImmutableHashSet.Create(new MetadataReference[]
-            {
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Core.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll")),
-                MetadataReference.CreateFromFile(netStandardAssembly.Location)
-            });
-        }
-
-        [NotNull]
         public string SourceCode { get; }
 
         [NotNull]
@@ -86,6 +61,20 @@ namespace RoslynTestFramework
         public NullableReferenceTypesSupport NullableReferenceTypesSupport { get; }
 
 #pragma warning disable AV1561 // Signature contains more than 3 parameters
+        public AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
+            [NotNull] string languageName, [NotNull] AnalyzerOptions options)
+            : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferencesLazy.Value,
+                DefaultDocumentationMode, DefaultOutputKind, null, TreatWarningsAsErrors.None, DefaultTestValidationMode, options,
+                NullableReferenceTypesSupport.Disabled)
+        {
+            FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
+            FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
+            FrameworkGuard.NotNullNorWhiteSpace(languageName, nameof(languageName));
+            FrameworkGuard.NotNull(options, nameof(options));
+        }
+#pragma warning restore AV1561 // Signature contains more than 3 parameters
+
+#pragma warning disable AV1561 // Signature contains more than 3 parameters
 #pragma warning disable AV1500 // Member or local function contains more than 7 statements
         private AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
             [NotNull] string languageName, [NotNull] string fileName, [NotNull] string assemblyName,
@@ -111,19 +100,30 @@ namespace RoslynTestFramework
 #pragma warning restore AV1500 // Member or local function contains more than 7 statements
 #pragma warning restore AV1561 // Signature contains more than 3 parameters
 
-#pragma warning disable AV1561 // Signature contains more than 3 parameters
-        public AnalyzerTestContext([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans,
-            [NotNull] string languageName, [NotNull] AnalyzerOptions options)
-            : this(sourceCode, sourceSpans, languageName, DefaultFileName, DefaultAssemblyName, DefaultReferencesLazy.Value,
-                DefaultDocumentationMode, DefaultOutputKind, null, TreatWarningsAsErrors.None, DefaultTestValidationMode, options,
-                NullableReferenceTypesSupport.Disabled)
+        [NotNull]
+        [ItemNotNull]
+        private static ImmutableHashSet<MetadataReference> ResolveDefaultReferences()
         {
-            FrameworkGuard.NotNull(sourceCode, nameof(sourceCode));
-            FrameworkGuard.NotNull(sourceSpans, nameof(sourceSpans));
-            FrameworkGuard.NotNullNorWhiteSpace(languageName, nameof(languageName));
-            FrameworkGuard.NotNull(options, nameof(options));
+            string assemblyPath = Path.GetDirectoryName(typeof(object).Assembly.Location);
+
+            if (assemblyPath == null)
+            {
+                throw new InvalidOperationException("Failed to locate assembly for System.Object.");
+            }
+
+            // Bug workaround for test runner in VS2019, which fails to load ValueTask due to missing dependency.
+            Assembly netStandardAssembly =
+                Assembly.Load("netstandard, Version=2.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51");
+
+            return ImmutableHashSet.Create(new MetadataReference[]
+            {
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Core.dll")),
+                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll")),
+                MetadataReference.CreateFromFile(netStandardAssembly.Location)
+            });
         }
-#pragma warning restore AV1561 // Signature contains more than 3 parameters
 
         [NotNull]
         public AnalyzerTestContext WithCode([NotNull] string sourceCode, [NotNull] IList<TextSpan> sourceSpans)
