@@ -98,7 +98,8 @@ namespace RoslynTestFramework
                 ValidateCompileErrors(compilerDiagnostics);
             }
 
-            return compilation.WithAnalyzers(ImmutableArray.Create(analyzer), options);
+            ImmutableArray<DiagnosticAnalyzer> analyzers = ImmutableArray.Create(analyzer);
+            return compilation.WithAnalyzers(analyzers, options);
         }
 
         [NotNull]
@@ -115,7 +116,8 @@ namespace RoslynTestFramework
                 }
             }
 
-            return compilation.WithOptions(compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions));
+            CompilationOptions compilationWithSpecificOptions = compilation.Options.WithSpecificDiagnosticOptions(diagnosticOptions);
+            return compilation.WithOptions(compilationWithSpecificOptions);
         }
 
         private void ValidateCompileErrors([ItemNotNull] ImmutableArray<Diagnostic> compilerDiagnostics)
@@ -128,8 +130,8 @@ namespace RoslynTestFramework
 
         [NotNull]
         [ItemNotNull]
-        private static IEnumerable<Diagnostic> EnumerateAnalyzerDiagnostics(
-            [NotNull] CompilationWithAnalyzers compilationWithAnalyzers, [NotNull] SyntaxTree tree)
+        private static IEnumerable<Diagnostic> EnumerateAnalyzerDiagnostics([NotNull] CompilationWithAnalyzers compilationWithAnalyzers,
+            [NotNull] SyntaxTree tree)
         {
             foreach (Diagnostic diagnostic in compilationWithAnalyzers.GetAnalyzerDiagnosticsAsync().Result)
             {
@@ -148,7 +150,8 @@ namespace RoslynTestFramework
         {
             if (diagnostic.Id == "AD0001")
             {
-                throw new Exception(diagnostic.Descriptor.Description.ToString());
+                string message = diagnostic.Descriptor.Description.ToString();
+                throw new Exception(message);
             }
         }
 
@@ -323,7 +326,8 @@ namespace RoslynTestFramework
 
             operations.Should().HaveCount(1);
 
-            return GetTextForOperation(document, operations.Single(), formatOutputDocument);
+            CodeActionOperation operation = operations.Single();
+            return GetTextForOperation(document, operation, formatOutputDocument);
         }
 
         [NotNull]
@@ -354,8 +358,7 @@ namespace RoslynTestFramework
 
             [NotNull]
             [ItemNotNull]
-            public IList<Diagnostic> DiagnosticsWithLocation =>
-                Diagnostics.Where(diagnostic => diagnostic.Location.IsInSource).ToArray();
+            public IList<Diagnostic> DiagnosticsWithLocation => Diagnostics.Where(diagnostic => diagnostic.Location.IsInSource).ToArray();
 
             [NotNull]
             public IList<TextSpan> SpansExpected { get; }

@@ -28,10 +28,24 @@ namespace RoslynTestFramework
         private readonly IList<TextBlock> blocks;
 
         [NotNull]
-        public string SourceText => string.Concat(blocks.Select(block => block.TextBefore));
+        public string SourceText
+        {
+            get
+            {
+                IEnumerable<string> beforeBlocks = blocks.Select(block => block.TextBefore);
+                return string.Concat(beforeBlocks);
+            }
+        }
 
         [NotNull]
-        public string ExpectedText => string.Concat(blocks.Select(block => block.TextAfter));
+        public string ExpectedText
+        {
+            get
+            {
+                IEnumerable<string> afterBlocks = blocks.Select(block => block.TextAfter);
+                return string.Concat(afterBlocks);
+            }
+        }
 
         [NotNull]
         public IList<TextSpan> SourceSpans { get; }
@@ -112,7 +126,8 @@ namespace RoslynTestFramework
 
                     if (block is MarkedTextBlock)
                     {
-                        TextSpans.Add(TextSpan.FromBounds(offset, offset + blockLength));
+                        TextSpan span = TextSpan.FromBounds(offset, offset + blockLength);
+                        TextSpans.Add(span);
                     }
 
                     offset += blockLength;

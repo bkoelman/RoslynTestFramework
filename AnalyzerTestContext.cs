@@ -115,12 +115,22 @@ namespace RoslynTestFramework
 
             return ImmutableHashSet.Create(new MetadataReference[]
             {
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "mscorlib.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Core.dll")),
-                MetadataReference.CreateFromFile(Path.Combine(assemblyPath, "System.Runtime.dll")),
+                CreateReferenceFromFile(assemblyPath, "mscorlib.dll"),
+                CreateReferenceFromFile(assemblyPath, "System.dll"),
+                CreateReferenceFromFile(assemblyPath, "System.Core.dll"),
+                CreateReferenceFromFile(assemblyPath, "System.Runtime.dll"),
                 MetadataReference.CreateFromFile(netStandardAssembly.Location)
             });
+        }
+
+        [NotNull]
+        private static PortableExecutableReference CreateReferenceFromFile([NotNull] string assemblyPath, [NotNull] string assemblyFileName)
+        {
+            FrameworkGuard.NotNull(assemblyPath, nameof(assemblyPath));
+            FrameworkGuard.NotNull(assemblyFileName, nameof(assemblyFileName));
+
+            string filePath = Path.Combine(assemblyPath, assemblyFileName);
+            return MetadataReference.CreateFromFile(filePath);
         }
 
         [NotNull]
@@ -157,8 +167,10 @@ namespace RoslynTestFramework
         {
             FrameworkGuard.NotNull(references, nameof(references));
 
+            ImmutableHashSet<MetadataReference> referenceSet = references.ToImmutableHashSet();
+
             return new AnalyzerTestContext(SourceCode, SourceSpans, LanguageName, FileName, AssemblyName,
-                references.ToImmutableHashSet(), DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors,
+                referenceSet, DocumentationMode, OutputKind, CompilerWarningLevel, WarningsAsErrors,
                 ValidationMode, Options, NullableReferenceTypesSupport);
         }
 
