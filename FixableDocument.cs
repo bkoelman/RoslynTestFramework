@@ -190,7 +190,8 @@ namespace RoslynTestFramework
                 if (length > 0)
                 {
                     string text = markupCode.Substring(offset, length);
-                    TextBlocks.Add(new StaticTextBlock(text));
+                    var block = new StaticTextBlock(text);
+                    TextBlocks.Add(block);
                 }
             }
 
@@ -261,7 +262,8 @@ namespace RoslynTestFramework
 
                     if (text.Length > 0)
                     {
-                        TextBlocks.Add(new StaticTextBlock(text));
+                        var block = new StaticTextBlock(text);
+                        TextBlocks.Add(block);
                     }
                 }
             }
